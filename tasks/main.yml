@@ -15,6 +15,15 @@
   when: ansible_os_family == 'Debian'
   sudo: yes
 
+- name: stop mysql upstart if active
+  command: stop mysql
+  sudo: yes
+  ignore_errors: yes
+
+- name: remove upstart config if exists
+  file: dest=/etc/init/mysql.conf state=absent
+  sudo: yes
+
 - name: Copy the my.cnf file 
   template: src=my.cnf.{{ ansible_os_family }}.j2 dest={{ mysql_conf_dir }}/my.cnf
   notify: 
