@@ -19,6 +19,7 @@
   command: stop mysql
   sudo: yes
   ignore_errors: yes
+  changed_when: false
 
 - name: remove upstart config if exists
   file: dest=/etc/init/mysql.conf state=absent
