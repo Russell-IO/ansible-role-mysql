@@ -11,7 +11,6 @@
 - name: Install the mysql packages in Debian derivatives
   apt: name={{ item }} state=installed update_cache=yes
   with_items: mysql_pkgs
-  environment: env
   when: ansible_os_family == 'Debian'
   sudo: yes
 
@@ -102,19 +101,26 @@
 
 - name: Ensure the hostname entry for master is available for the client.
   lineinfile: dest=/etc/hosts regexp="{{ mysql_repl_master }}" line="{{ hostvars[mysql_repl_master].ansible_default_ipv4.address + "   " + mysql_repl_master }}" state=present
-  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined
+  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined and mysql_master_rds != 'true'
   sudo: yes
 
 - name: Get the current master servers replication status
   mysql_replication: mode=getmaster
   delegate_to: "{{ mysql_repl_master }}"
   register: repl_stat
-  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined
+  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined and repl_stat_rds is not defined
   sudo: no
 
-- name: Change the master in slave to start the replication
+- name: Change the master in slave to start the replication - MySQL as Master
   mysql_replication: mode=changemaster master_host={{ mysql_repl_master }} master_log_file={{ repl_stat.File }} master_log_pos={{ repl_stat.Position }} master_user={{ mysql_repl_user[0].name }} master_password={{ mysql_repl_user[0].pass }}
-  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined
+  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined and repl_stat_rds is not defined
+  notify:
+   - restart mysql
+  sudo: no
+
+- name: Change the master in slave to start the replication - RDS as Master
+  mysql_replication: mode=changemaster master_host={{ mysql_repl_master }} master_log_file={{ repl_stat_rds.File }} master_log_pos={{ repl_stat_rds.Position }} master_user={{ mysql_repl_user[0].name }} master_password={{ mysql_repl_user[0].pass }}  
+  when: slave|failed and mysql_repl_role == 'slave' and mysql_repl_master is defined and repl_stat_rds is defined
   notify:
    - restart mysql
   sudo: no
