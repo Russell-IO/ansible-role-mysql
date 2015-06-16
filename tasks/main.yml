@@ -117,6 +117,7 @@
   notify:
    - restart mysql
   sudo: no
+  ignore_errors: yes
 
 - name: Change the master in slave to start the replication - RDS as Master
   mysql_replication: mode=changemaster master_host={{ mysql_repl_master }} master_log_file={{ repl_stat_rds.File }} master_log_pos={{ repl_stat_rds.Position }} master_user={{ mysql_repl_user[0].name }} master_password={{ mysql_repl_user[0].pass }}  
